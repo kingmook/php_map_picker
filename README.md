@@ -6,7 +6,7 @@ Uses Google Map v3 Api to generate a Map with InfoDialogs on demand based on gen
 Basic map structure based on: https://developers.google.com/maps/articles/phpsqlajax_v3
 Javascript location picker from: https://github.com/kingmook/locationpicker
 
-![Map Example](kingmook.github.com/php_map_picker/blob/master/img/map.png)
+![Map Example](img/map.png)
 
 
 
