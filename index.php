@@ -7,7 +7,41 @@ ob_start();
 require("phpsqlajax_dbinfo.php");
 
 error_reporting(E_ALL);
-ini_set('display_errors', 1);	?>
+ini_set('display_errors', 1);	
+
+//Expiry headers
+header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+header('Access-Control-Allow-Origin: https://lms.brocku.ca, https://lms-t.brocku.ca');
+
+//The session cookie from BLTI security code
+include '/var/www/html/elearn-admin/functions.php';
+
+// Load up the LTI Support code
+require_once '/var/www/html/elearn-admin/ims-blti/blti.php';
+require_once '/var/www/html/elearn-admin/ims-blti/lti_style_cookie.php';
+
+// Initialize, all secrets are 'secret', do not set session, and do not redirect
+$context = new BLTI("q[4p3gjrwiaos;0jq3[84w]]", false, false);
+
+//Cookie-afy $context->info
+if ($context->valid ) set_lti_style_cookie($context->info);
+
+//Check for LTI tool details
+$found_cookie = get_lti_style_cookie();
+if ($context->valid) {
+	$user = array('username' => $context->info['lis_person_sourcedid'], 'name' => $context->info['lis_person_name_full'] ,'email' => $context->info['lis_person_sourcedid'].'@brocku.ca','roles' => $context->info['roles']);
+}
+//If theres a built cookie use that now instead
+elseif (!empty($found_cookie)) {
+		$user = array('username' => $found_cookie['lis_person_sourcedid'], 'name' => $found_cookie['lis_person_name_full'] ,'email' => $found_cookie['lis_person_sourcedid'].'@brocku.ca','roles' => $found_cookie['roles']);
+}
+//No cookie and no salid BTLI context - No access for you.
+else die('Authentication error.  Please press the blue reset arrows above.');
+
+if(is_Array($user)) include '/var/www/html/elearn-admin/details.php'; //Our records -- easier than a DB
+
+?>
 
 <!DOCTYPE html>
 <html>
@@ -19,10 +53,11 @@ ini_set('display_errors', 1);	?>
 	<!--The javascript for the google map-->
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 	<!--JQuery inclusion stuff-->
-	<link rel="stylesheet" href="https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
-	<script src="https://code.jquery.com/jquery-1.9.1.js"></script>
-	<script src="https://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
-	<link rel="stylesheet" href="css/modal-style.css">
+	 <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
+	 <link type="text/css" rel="stylesheet" media="all" href="https://www.brocku.ca/sites/all/themes/custom/brock/style.css?1">
+	  <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+	  <script src="https://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+	  <link rel="stylesheet" href="css/modal-style.css">
 	<!--Modal and verification script-->
 	<script>
 	  $(function() {
@@ -105,7 +140,6 @@ ini_set('display_errors', 1);	?>
 		  height: 520,
 		  width: 500,
 		  position:['middle',50],
-		  closeOnEscape: false,
 		  modal: true});
 	 
 		$( "#picker" ).click(function() {
@@ -131,6 +165,7 @@ ini_set('display_errors', 1);	?>
     //<![CDATA[
     var customIcons = {
 	  audio: {
+        //icon: 'https://ctlet.brocku.ca/library/image/silk/flag_red.png'
 		icon: 'img/sound_yellow2.png'
       }
     };
@@ -236,33 +271,34 @@ ini_set('display_errors', 1);	?>
 	<label for='desc'>Item Description:</label><br />
 	<textarea rows='8' cols='60' name='desc' id='desc'></textarea><br />
 	<input style="visibility:hidden" type='submit' value='Add Entry' id ="soundSubmit" name="soundSubmit"/>
-	<form>
+	</form>
 	</div>
 	
 	<!--Modal for removing points-->
 	<div id="dialog-form-rem" title="Remove a sound point">
-	<p class="validateTips">This is a listing of all of the sound point you've created. <br />Choose remove on the point you'd like to delete. There is no way to reverse this process.</p>	
+	<p class="validateTips">This is a listing of all of the sound point you've created. <br />Choose remove on the point you'd like to delete. <br />There is no way to reverse this process.</p>	
 	<!--Main submission form with loc picker-->
-	<form action="index.php" id="removeForm" method="POST">	
-	
+	<form action="index.php" id="removeForm" name="removeForm" method="POST">
 	<?php 
 	//Get the sound points the current user has created and present them for potential deletion
 	$db2 = new PDO('mysql:host=localhost;dbname='.$database.';charset=utf8', $username, $password);
 		if (!$db2) {
 		  die('Failed to connect to DB : ' . mysql_error());
 		}
-		
+
 		// Select all the rows in the markers table
 		$stmt2 = $db2->prepare('SELECT * FROM `markers` WHERE `createdby` = "'.$user['username'].'"');
 		$stmt2->execute();
 		//Pull out all the points the user has created
     	while (($row = $stmt2->fetch(PDO::FETCH_ASSOC)) !== false) {
 			//print_r($row);
-			echo $row['name'].' - <input style="display:inline" type="submit" value="Remove Item - '.$row['id'].'" id ="soundSubmit" name="soundSubmit"/><br />';
+			echo $row['name'].' - <input style="display:inline" type="checkbox" value="'.$row['id'].'" id ="check-'.$row['id'].'" name="check-'.$row['id'].'">
+			<br />';
 		}	
 	?>
-	
-	<form>
+	<input type='button' value='Remove Item(s)' onclick='$( "#soundRemove" ).click()'/>
+	<input style="visibility:hidden" type='submit' value='Remove Entry' id ="soundRemove" name="soundRemove"/>
+	</form>
 	</div>
 	
 	<!--Load the location picker javascript-->
@@ -272,11 +308,7 @@ ini_set('display_errors', 1);	?>
 	</script>
 	
 	<?php
-	//Error reporting is always helpful
-	error_reporting(E_ALL);
-	ini_set('display_errors', 1); 
-	
-	//If the user has submitted the form
+	//If the user has submitted the form to add a point
 	if(isset($_POST["soundSubmit"])){
 		
 		// Opens a connection to a MySQL server using PDO
@@ -300,8 +332,37 @@ ini_set('display_errors', 1);	?>
 		}
 		header("Location: index.php?");
 	}
-	?>	
 	
+	//If the user has submitted the form to remove a point
+		if(isset($_POST["soundRemove"])){
+		
+		// Opens a connection to a MySQL server using PDO
+		$db = new PDO('mysql:host=localhost;dbname='.$database.';charset=utf8', $username, $password);
+		if (!$db) {
+		  die('Failed to connect to DB : ' . mysql_error());
+		}
+		//Run through all the submitted items for removal
+		foreach ($_POST as &$check){
+			if($check == "Remove Entry"){
+				break;
+			}
+			// Select all the rows in the markers table
+			$stmt = $db->prepare("DELETE FROM `markers` WHERE `id` = ?");
+
+			//Try catch the prepared statment or throw the mysql error
+			try {
+				$stmt->execute(array($check));
+			} catch(PDOException $ex) {
+				echo "Unable to: "; //user friendly message
+				echo $ex->getMessage();
+			}
+		}
+		//Push the user to the map with a blank get pass to stop multiple submits/removals
+		header("Location: index.php?");
+	}
+	
+	
+	?>	
 	
 	</div>
 </body>
