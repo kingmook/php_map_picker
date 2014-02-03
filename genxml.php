@@ -1,9 +1,6 @@
 <?php
-ini_set('display_errors',1);
-ini_set('display_startup_errors',1);
-error_reporting(-1);
-
-//Version 1 from https://developers.google.com/maps/articles/phpsqlajax_v3
+//Generate an XML file to be live parsed by the index.php map generator
+//Primarily from - Version 1 from https://developers.google.com/maps/articles/phpsqlajax_v3
 require("phpsqlajax_dbinfo.php");
 
 function parseToXML($htmlStr) 
