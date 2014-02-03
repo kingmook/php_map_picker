@@ -12,34 +12,15 @@ ini_set('display_errors', 1);
 //Expiry headers
 header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
-header('Access-Control-Allow-Origin: https://lms.brocku.ca, https://lms-t.brocku.ca');
 
 //The session cookie from BLTI security code
 include '/var/www/html/elearn-admin/functions.php';
 
-// Load up the LTI Support code
-require_once '/var/www/html/elearn-admin/ims-blti/blti.php';
-require_once '/var/www/html/elearn-admin/ims-blti/lti_style_cookie.php';
+// Load up the LTI Support code - from https://code.google.com/p/ims-dev/
+require_once 'blti.php';
 
 // Initialize, all secrets are 'secret', do not set session, and do not redirect
-$context = new BLTI("q[4p3gjrwiaos;0jq3[84w]]", false, false);
-
-//Cookie-afy $context->info
-if ($context->valid ) set_lti_style_cookie($context->info);
-
-//Check for LTI tool details
-$found_cookie = get_lti_style_cookie();
-if ($context->valid) {
-	$user = array('username' => $context->info['lis_person_sourcedid'], 'name' => $context->info['lis_person_name_full'] ,'email' => $context->info['lis_person_sourcedid'].'@brocku.ca','roles' => $context->info['roles']);
-}
-//If theres a built cookie use that now instead
-elseif (!empty($found_cookie)) {
-		$user = array('username' => $found_cookie['lis_person_sourcedid'], 'name' => $found_cookie['lis_person_name_full'] ,'email' => $found_cookie['lis_person_sourcedid'].'@brocku.ca','roles' => $found_cookie['roles']);
-}
-//No cookie and no salid BTLI context - No access for you.
-else die('Authentication error.  Please press the blue reset arrows above.');
-
-if(is_Array($user)) include '/var/www/html/elearn-admin/details.php'; //Our records -- easier than a DB
+$context = new BLTI("%SECRET%", false, false);
 
 ?>
 
@@ -54,7 +35,6 @@ if(is_Array($user)) include '/var/www/html/elearn-admin/details.php'; //Our reco
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 	<!--JQuery inclusion stuff-->
 	 <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
-	 <link type="text/css" rel="stylesheet" media="all" href="https://www.brocku.ca/sites/all/themes/custom/brock/style.css?1">
 	  <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
 	  <script src="https://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
 	  <link rel="stylesheet" href="css/modal-style.css">
@@ -165,7 +145,6 @@ if(is_Array($user)) include '/var/www/html/elearn-admin/details.php'; //Our reco
     //<![CDATA[
     var customIcons = {
 	  audio: {
-        //icon: 'https://ctlet.brocku.ca/library/image/silk/flag_red.png'
 		icon: 'img/sound_yellow2.png'
       }
     };
