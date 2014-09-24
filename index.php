@@ -304,7 +304,7 @@ $context = new BLTI("%SECRET%", false, false);
 
 		//Try catch the prepared statment or throw the mysql error
 		try {
-    		$stmt->execute(array($_POST["locName"], $latLong[0], $latLong[1], $_POST["desc"], $_POST["url"], $_POST["userName"]));
+    			$stmt->execute(array($_POST["locName"], $latLong[0], $latLong[1], htmlspecialchars($_POST["desc"], ENT_QUOTES), htmlspecialchars($_POST["url"], ENT_QUOTES), $_POST["userName"], $found_cookie['context_id']));
 		} catch(PDOException $ex) {
 			echo "Unable to: "; //user friendly message
 			echo $ex->getMessage();
